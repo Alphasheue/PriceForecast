@@ -32,15 +32,16 @@
 
 <h3>未来十天的价格预测</h3>
 <%
-    List<String> predictList = (List<String>) request.getAttribute("predictList");
-    if (predictList != null && predictList.size() != 0) {
+    List<String> lstmPredictList = (List<String>) request.getAttribute("lstmPredictList");
+    List<String> gruPredictList = (List<String>) request.getAttribute("gruPredictList");
+    if (gruPredictList != null && lstmPredictList != null) {
 %>
 <table class="table" border="1">
     <thead>
     <tr>
         <th style="padding: 20px">预测数据</th>
         <%
-            for (int i = 1; i <= predictList.size(); i++) {
+            for (int i = 1; i <= gruPredictList.size(); i++) {
         %>
         <th style="padding: 20px"><%=i%>
         </th>
@@ -51,9 +52,20 @@
     </thead>
     <tbody>
     <tr>
-        <td style="padding: 20px">预测值</td>
+        <td style="padding: 20px">LSTM</td>
         <%
-            for (String result : predictList) {
+            for (String result : lstmPredictList) {
+        %>
+        <td style="padding: 20px"><%=result%>
+        </td>
+        <%
+            }
+        %>
+    </tr>
+    <tr>
+        <td style="padding: 20px">GRU</td>
+        <%
+            for (String result : gruPredictList) {
         %>
         <td style="padding: 20px"><%=result%>
         </td>

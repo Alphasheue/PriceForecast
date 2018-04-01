@@ -85,7 +85,7 @@
         </p>
     </form>
 
-    <div id="light" class="white_content">温馨提示：模型构建需1~2分钟时间，请勿多次点击按钮，请耐心等待！
+        <div id="light" class="white_content">温馨提示：模型构建需3~5分钟时间，请耐心等待！
         <button onclick="document.getElementById('light').style.display='none';document.getElementById('fade').style.display='none'">
             点这里关闭本窗口
         </button>

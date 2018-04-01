@@ -140,14 +140,15 @@ public class PriceDAO {
         }
     }
 
-    public static List<Data> getTrain(String name) {
-        String sql = "select * from vege_price where name=? order by date limit 731";
+    public static List<Data> getTrain(String name, int number) {
+        String sql = "select * from vege_price where name=? order by date limit ?";
 //        String sql = "select * from fruit_price f where DATE_FORMAT(f.date,'%Y-%m-%d') >=\n" +
 //                " '2017-01-01' order by date";
 
         try {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, name);
+            ps.setInt(2, number);
             ResultSet rs = ps.executeQuery();
             List<Data> list = new ArrayList<Data>();
             while (rs.next()) {
@@ -157,8 +158,6 @@ public class PriceDAO {
                 data.setPrice(rs.getDouble("average_price"));
                 String str = rs.getString("date");
                 Date date = new SimpleDateFormat("yy-MM-dd").parse(str);
-//                System.out.println("time:" + time.getTime() + "," + str);
-//                double date = (double) time.getTime() / 100000;
                 data.setDate(date);
 
                 list.add(data);
@@ -170,12 +169,14 @@ public class PriceDAO {
         }
     }
 
-    public static List<Data> getTest(String name) {
-        String sql = "select * from vege_price where name=? order by date limit 731,61";
+    public static List<Data> getTest(String name, int start, int number) {
+        String sql = "select * from vege_price where name=? order by date limit ?,?";
 
         try {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, name);
+            ps.setInt(2, start);
+            ps.setInt(3, number);
             ResultSet rs = ps.executeQuery();
             List<Data> list = new ArrayList<Data>();
             while (rs.next()) {
@@ -185,8 +186,6 @@ public class PriceDAO {
                 data.setPrice(rs.getDouble("average_price"));
                 String str = rs.getString("date");
                 Date date = new SimpleDateFormat("yy-MM-dd").parse(str);
-//                System.out.println("time:" + time.getTime() + "," + str);
-//                double date = (double) time.getTime() / 100000;
                 data.setDate(date);
 
                 list.add(data);

@@ -2,12 +2,10 @@ package com.sheue.ml.rnn.lstm;
 
 import com.sheue.app.bean.Data;
 import com.sheue.app.dao.PriceDAO;
-import com.sheue.app.utils.LineChartUtil;
 import com.sheue.ml.dataset.DataText;
 import com.sheue.ml.layers.MatIniter;
 import com.sheue.ml.utils.LossFunction;
 import org.jblas.DoubleMatrix;
-import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import java.util.ArrayList;
@@ -18,18 +16,30 @@ import java.util.Map;
 // Language Model using LSTM
 public class LSTMPredict {
     private LSTM lstm;
-    private DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+    private DataText dataText;
+    private DefaultCategoryDataset dataset;
 
     public LSTMPredict(int inSize, int outSize, MatIniter initer) {
-        lstm = new LSTM(inSize, outSize, initer);
+        this.lstm = new LSTM(inSize, outSize, initer);
     }
 
-    private void train(DataText dataText, double lr, double acc) {
+    public static LSTMPredict init(String itemName, double lr, double acc, DefaultCategoryDataset dataset) {
+        DataText dt = new DataText(itemName, 730);
+        int hiddenSize = 100;
+        LSTMPredict lstm = new LSTMPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
+        lstm.dataText = dt;
+        lstm.dataset = dataset;
+        System.out.println("LSTM模型初始化成功！");
+        lstm.train(itemName, lr, acc);
+        return lstm;
+    }
+
+    private void train(String itemName, double lr, double acc) {
         Map<Integer, String> indexChar = dataText.getIndexChar();
         Map<String, DoubleMatrix> charVector = dataText.getCharVector();
         Map<String, Integer> charIndex = dataText.getCharIndex();
         List<String> sequenceList = dataText.getSequence();
-        for (int i = 0; i < 600; i++) {
+        for (int i = 0; i < 400; i++) {
             double error = 0;
             double num = sequenceList.size();
             double wrong = 0;
@@ -66,88 +76,121 @@ public class LSTMPredict {
 
             lstm.bptt(acts, sequenceList.size() - 2, lr);
 
-            System.out.println("Iter=" + i + ",error=" + error + ",num=" + num + ",wrong=" + wrong);
+            System.out.println("第" + (i + 1) + "次训练，误差=" + error + "，训练用例数=" + (num - 1) + "，预测错误数=" + wrong);
             if (wrong / num < acc) {
                 System.out.println("模型训练完成！");
                 break;
             }
+            if (i == 399) {
+                System.out.println("已达到训练次数上限" + (i + 1) + "次！");
+            }
         }
 
-        // 开始测试
-        List<Data> list = PriceDAO.getTest("苹果");
+        System.out.println("开始测试：");
+        List<Data> list = PriceDAO.getTest(itemName, 730, 61);
         double error = 0;
-        double num = list.size();
+        double num = list.size() - 1;
         double wrong = 0;
-        int newData = 0;
         Map<String, DoubleMatrix> acts = new HashMap<>();
-        for (int t = 0; t < list.size() - 1; t++) {
+        for (int t = 0; t < num; t++) {
             String sequence = String.valueOf(list.get(t).getPrice());
-            int index = 0;
-            DoubleMatrix xt = null;
-            if (charVector.containsKey(sequence)) {
-                xt = charVector.get(sequence);
-                index = charIndex.get(sequence);
-            } else {
-                newData++;
-                for (int j = 1; j <= 5; j++) {
-                    String sequence2 = String.valueOf(list.get(t).getPrice() - 0.1 * j);
-                    if (charVector.containsKey(sequence2)) {
-                        xt = charVector.get(sequence2);
-                        sequence = sequence2;
-                        index = charIndex.get(sequence);
-                        System.out.println("newseq:" + "-0." + j);
-                        break;
-                    } else {
-                        sequence2 = String.valueOf(list.get(t).getPrice() + 0.1 * j);
-                        if (charVector.containsKey(sequence2)) {
-                            xt = charVector.get(sequence2);
-                            sequence = sequence2;
-                            index = charIndex.get(sequence);
-                            System.out.println("newseq:" + "+0." + j);
-                            break;
-                        }
-                    }
-                }
-                if (xt == null) {
-                    System.out.println("此数无解：t=" + t + ",seq:" + sequence);
-                    continue;
-                }
-            }
+            sequence = indexChar.get(convertSequence(charIndex, sequence));
+            DoubleMatrix xt = charVector.get(sequence);
             acts.put("x" + t, xt);
             lstm.active(t, acts);
             DoubleMatrix predcitYt = lstm.decode(acts.get("h" + t));
             acts.put("py" + t, predcitYt);
-            DoubleMatrix trueYt = charVector.get(sequence);
+            String nextSequence = indexChar.get(convertSequence(charIndex, String.valueOf(list.get(t + 1).getPrice())));
+            DoubleMatrix trueYt = charVector.get(nextSequence);
             acts.put("y" + t, trueYt);
 
+            error += LossFunction.getMeanCategoricalCrossEntropy(predcitYt, trueYt);
+
             double predict = Double.parseDouble(indexChar.get(predcitYt.argmax()));
-            double trueY = Double.parseDouble(indexChar.get(trueYt.argmax()));
-            double real = list.get(t + 1).getPrice();
-            System.out.println("iter" + t + ",predict=" + predict + ",true=" + trueY + ",real=" + real);
-            dataset.addValue(predict, "predict", String.valueOf(t));
-            dataset.addValue(trueY, "true", String.valueOf(t));
-            dataset.addValue(real, "real", String.valueOf(t));
-            if (predict != trueY) {
-                error++;
-            }
-            if (Math.abs(predict - real) > 0.3) {
+            double real = Double.parseDouble(indexChar.get(trueYt.argmax()));
+            System.out.println("iter" + (t + 1) + ",predict=" + predict + ",real=" + real);
+            dataset.addValue(predict, "LSTM预测价格", new Integer(t));
+            dataset.addValue(real, "实际价格", new Integer(t));
+            if (Math.abs(predict - real) > 0.2) {
                 wrong++;
             }
         }
-        JFreeChart jFreeChart = LineChartUtil.createLineChart("错误率", "次数", "大小", dataset);
-        LineChartUtil.draw("./data/LSTMResult.jpg", jFreeChart, 1280, 720);
 
-        System.out.println("error=" + error + ",num=" + num + ",wrong=" + wrong);
-        System.out.println("new:" + newData);
+        System.out.println("误差=" + error + "，测试用例数=" + num + "，预测错误数=" + wrong + "，准确率"
+                + String.format("%.2f", (1 - wrong / num) * 100) + "%");
+    }
+
+    public List<String> predict(String itemName, int time) {
+        Map<Integer, String> indexChar = dataText.getIndexChar();
+        Map<String, DoubleMatrix> charVector = dataText.getCharVector();
+        Map<String, Integer> charIndex = dataText.getCharIndex();
+        List<String> result = new ArrayList<>();
+
+        List<Data> list = PriceDAO.getPage(itemName, 1);
+        String sequence = String.valueOf(list.get(0).getPrice());
+        Integer index = convertSequence(charIndex, sequence);
+        sequence = indexChar.get(index);
+        Map<String, DoubleMatrix> acts = new HashMap<>();
+        for (int t = 0; t < time; t++) {
+            DoubleMatrix xt = charVector.get(sequence);
+            acts.put("x" + t, xt);
+            lstm.active(t, acts);
+            DoubleMatrix predcitYt = lstm.decode(acts.get("h" + t));
+            acts.put("py" + t, predcitYt);
+            index++;
+            sequence = indexChar.get(index);
+            DoubleMatrix trueYt = charVector.get(sequence);
+            acts.put("y" + t, trueYt);
+
+            result.add(indexChar.get(predcitYt.argmax()));
+        }
+        return result;
+    }
+
+    private Integer convertSequence(Map<String, Integer> charIndex, String sequence) {
+        if (charIndex.containsKey(sequence)) {
+            return charIndex.get(sequence);
+        } else {
+            for (int i = 1; i <= 5; i++) {
+                String sequence2 = String.valueOf(Double.parseDouble(sequence) - 0.1 * i);
+                if (charIndex.containsKey(sequence2)) {
+                    return charIndex.get(sequence2);
+                } else {
+                    sequence2 = String.valueOf(Double.parseDouble(sequence) + 0.1 * i);
+                    if (charIndex.containsKey(sequence2)) {
+                        return charIndex.get(sequence2);
+                    }
+                }
+            }
+        }
+        System.out.println("convert sequence failed:seq=" + sequence);
+        return null;
+    }
+
+    public LSTM getLstm() {
+        return lstm;
+    }
+
+    public DefaultCategoryDataset getDataset() {
+        return dataset;
+    }
+
+    public DataText getDataText() {
+        return dataText;
     }
 
     public static void main(String[] args) {
-        DataText dt = new DataText("苹果");
-        double lr = 0.9;      //学习速率，越高模型训练速度越快，准度越低
-        double acc = 0.5;   // 要求模型拥有的最高错误率
+        String itemName = "西兰花";
+        DataText dt = new DataText(itemName, 365);
+        double lr = 0.8;      //学习速率，越高模型训练速度越快，准度越低
+        double acc = 0.5;   // 错误率，越高越容易训练出来
         int hiddenSize = 100;
-        LSTMPredict lstm = new LSTMPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
-        lstm.train(dt, lr, acc);
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        LSTMPredict lstm = LSTMPredict.init(itemName, lr, acc, dataset);
+        List<String> list = lstm.predict(itemName, 10);
+        for (String res : list) {
+            System.out.println("res:" + res);
+        }
     }
 
 }

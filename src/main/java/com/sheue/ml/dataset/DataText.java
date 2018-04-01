@@ -16,13 +16,8 @@ public class DataText {
     private Map<String, DoubleMatrix> charVector = new HashMap<>();
     private List<String> sequence = new ArrayList<>();
 
-    public DataText(String name) {
-        loadData(name);
-        buildDistributedRepresentations();
-    }
-
-    private void loadData(String name) {
-        List<Data> list = PriceDAO.getTrain(name);
+    public DataText(String name, int number) {
+        List<Data> list = PriceDAO.getTrain(name, number);
         for (Data data : list) {
             sequence.add(String.valueOf(data.getPrice()));
             String key = String.valueOf(data.getPrice());
@@ -31,6 +26,7 @@ public class DataText {
                 indexChar.put(charIndex.get(key), key);
             }
         }
+        buildDistributedRepresentations();
     }
 
     private void buildDistributedRepresentations() {

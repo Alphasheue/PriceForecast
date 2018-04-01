@@ -17,17 +17,19 @@ import java.util.Map;
 public class GRUPredict {
     private GRU gru;
     private DataText dataText;
-    private DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+    private DefaultCategoryDataset dataset;
 
     public GRUPredict(int inSize, int outSize, MatIniter initer) {
         this.gru = new GRU(inSize, outSize, initer);
     }
 
-    public static GRUPredict init(String itemName, double lr, double acc) {
-        DataText dt = new DataText(itemName);
+    public static GRUPredict init(String itemName, double lr, double acc, DefaultCategoryDataset dataset) {
+        DataText dt = new DataText(itemName, 730);
         int hiddenSize = 100;
         GRUPredict gru = new GRUPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
         gru.dataText = dt;
+        gru.dataset = dataset;
+        System.out.println("GRU模型初始化成功！");
         gru.train(itemName, lr, acc);
         return gru;
     }
@@ -74,7 +76,7 @@ public class GRUPredict {
 
             gru.bptt(acts, sequenceList.size() - 2, lr);
 
-            System.out.println("第" + (i + 1) + "次训练，误差=" + error + "，训练用例数=" + num + "，预测错误数=" + wrong);
+            System.out.println("第" + (i + 1) + "次训练，误差=" + error + "，训练用例数=" + (num - 1) + "，预测错误数=" + wrong);
             if (wrong / num < acc) {
                 System.out.println("模型训练完成！");
                 break;
@@ -85,7 +87,7 @@ public class GRUPredict {
         }
 
         System.out.println("开始测试：");
-        List<Data> list = PriceDAO.getTest(itemName);
+        List<Data> list = PriceDAO.getTest(itemName, 730, 61);
         double error = 0;
         double num = list.size() - 1;
         double wrong = 0;
@@ -98,7 +100,8 @@ public class GRUPredict {
             gru.active(t, acts);
             DoubleMatrix predcitYt = gru.decode(acts.get("h" + t));
             acts.put("py" + t, predcitYt);
-            DoubleMatrix trueYt = charVector.get(String.valueOf(list.get(t + 1).getPrice()));
+            String nextSequence = indexChar.get(convertSequence(charIndex, String.valueOf(list.get(t + 1).getPrice())));
+            DoubleMatrix trueYt = charVector.get(nextSequence);
             acts.put("y" + t, trueYt);
 
             error += LossFunction.getMeanCategoricalCrossEntropy(predcitYt, trueYt);
@@ -106,7 +109,7 @@ public class GRUPredict {
             double predict = Double.parseDouble(indexChar.get(predcitYt.argmax()));
             double real = Double.parseDouble(indexChar.get(trueYt.argmax()));
             System.out.println("iter" + (t + 1) + ",predict=" + predict + ",real=" + real);
-            dataset.addValue(predict, "预测价格", new Integer(t));
+            dataset.addValue(predict, "GRU预测价格", new Integer(t));
             dataset.addValue(real, "实际价格", new Integer(t));
             if (Math.abs(predict - real) > 0.2) {
                 wrong++;
@@ -180,14 +183,16 @@ public class GRUPredict {
 
     public static void main(String[] args) {
         String itemName = "西兰花";
-        DataText dt = new DataText(itemName);
+        DataText dt = new DataText(itemName, 730);
         double lr = 1;      //学习速率，越高模型训练速度越快，准度越低
-        double acc = 0.33;   // 要求模型拥有的最高错误率
+        double acc = 0.33;   // 错误率，越高越容易训练出来
         int hiddenSize = 100;
-        GRUPredict gru = new GRUPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
-        gru.dataText = dt;
-        gru.train(itemName, lr, acc);
-
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        GRUPredict gru = GRUPredict.init(itemName, lr, acc, dataset);
+        List<String> list = gru.predict(itemName, 10);
+        for (String res : list) {
+            System.out.println("res:" + res);
+        }
     }
 
 }
