@@ -14,10 +14,6 @@ public class Activer {
         return (e - 1) / (e + 1);
     }
 
-    //public static double tanh(double x) {
-    //    return 2 * logistic(2 * x) - 1;
-    //}
-
     public static DoubleMatrix logistic(DoubleMatrix X) {
         return MatrixFunctions.pow(MatrixFunctions.exp(X.mul(-1)).add(1), -1);
     }

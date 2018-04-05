@@ -18,13 +18,6 @@
 
 <body>
 <h1>大数据分析和预测系统</h1>
-<table align="center">
-    <tr>
-        <td><a href="index.jsp">首页</a></td>
-        <td><a href="SignUp.jsp">注册</a></td>
-        <td><a href="Login.jsp">登录</a></td>
-    </tr>
-</table>
 <hr/>
 </body>
 </html>

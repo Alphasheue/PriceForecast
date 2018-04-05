@@ -18,6 +18,7 @@ public class LSTMPredict {
     private LSTM lstm;
     private DataText dataText;
     private DefaultCategoryDataset dataset;
+    private double accuracy;
 
     public LSTMPredict(int inSize, int outSize, MatIniter initer) {
         this.lstm = new LSTM(inSize, outSize, initer);
@@ -116,8 +117,9 @@ public class LSTMPredict {
             }
         }
 
+        this.accuracy = (1 - wrong / num) * 100;
         System.out.println("误差=" + error + "，测试用例数=" + num + "，预测错误数=" + wrong + "，准确率"
-                + String.format("%.2f", (1 - wrong / num) * 100) + "%");
+                + String.format("%.2f", this.accuracy) + "%");
     }
 
     public List<String> predict(String itemName, int time) {
@@ -179,9 +181,13 @@ public class LSTMPredict {
         return dataText;
     }
 
+    public double getAccuracy() {
+        return accuracy;
+    }
+
     public static void main(String[] args) {
         String itemName = "西兰花";
-        DataText dt = new DataText(itemName, 365);
+        DataText dt = new DataText(itemName, 730);
         double lr = 0.8;      //学习速率，越高模型训练速度越快，准度越低
         double acc = 0.5;   // 错误率，越高越容易训练出来
         int hiddenSize = 100;

@@ -115,8 +115,8 @@
                 }
                 int total;
                 String fruitName = "";
-                if (request.getSession().getAttribute("findWord") != null) {
-                    fruitName = String.valueOf(request.getParameter("findWord"));
+                if (request.getSession().getAttribute("findWord") != null && !"".equals(request.getSession().getAttribute("findWord"))) {
+                    fruitName = String.valueOf(request.getSession().getAttribute("findWord"));
                     list = PriceDAO.getPage(fruitName, currentPage);
                     total = PriceDAO.getTotal(fruitName);
                 } else {

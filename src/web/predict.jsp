@@ -48,6 +48,7 @@
         <%
             }
         %>
+        <th style="padding: 20px">准确率</th>
     </tr>
     </thead>
     <tbody>
@@ -61,6 +62,7 @@
         <%
             }
         %>
+        <td style="padding: 20px">${lstmAccuracy}%</td>
     </tr>
     <tr>
         <td style="padding: 20px">GRU</td>
@@ -72,6 +74,7 @@
         <%
             }
         %>
+        <td style="padding: 20px">${gruAccuracy}%</td>
     </tr>
     </tbody>
 </table>

@@ -8,20 +8,30 @@ public class JDBCConnection {
     private final static String URL = "jdbc:mysql://127.0.0.1:3306/hdfs?useUnicode=true&characterEncoding=UTF-8";
     private final static String USER = "root";
     private final static String PASSWORD = "123456";
-    private static Connection conn;
+    private static Connection conn = null;
 
-    static {
+    private static JDBCConnection connection;
+
+    private JDBCConnection() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             conn = DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (ClassNotFoundException e) {
-            System.err.println("ClassNotFoundException:" + e.getMessage());
+            e.printStackTrace();
         } catch (SQLException e) {
-            System.err.println("SQLException:" + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public static Connection getConnection() {
+        if (connection == null) {
+            synchronized (JDBCConnection.class) {
+                if (connection == null) {
+                    connection = new JDBCConnection();
+                }
+            }
+        }
         return conn;
     }
+
 }

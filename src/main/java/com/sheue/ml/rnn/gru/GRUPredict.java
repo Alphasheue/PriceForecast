@@ -18,6 +18,7 @@ public class GRUPredict {
     private GRU gru;
     private DataText dataText;
     private DefaultCategoryDataset dataset;
+    private double accuracy;
 
     public GRUPredict(int inSize, int outSize, MatIniter initer) {
         this.gru = new GRU(inSize, outSize, initer);
@@ -118,8 +119,9 @@ public class GRUPredict {
 //        JFreeChart jFreeChart = LineChartUtil.createLineChart("错误率", "次数", "大小", dataset);
 //        LineChartUtil.draw("./data/GRUResult.jpeg", jFreeChart, 1280, 720);
 
+        this.accuracy = (1 - wrong / num) * 100;
         System.out.println("误差=" + error + "，测试用例数=" + num + "，预测错误数=" + wrong + "，准确率"
-                + String.format("%.2f", (1 - wrong / num) * 100) + "%");
+                + String.format("%.2f", this.accuracy) + "%");
     }
 
     public List<String> predict(String itemName, int time) {
@@ -179,6 +181,10 @@ public class GRUPredict {
 
     public DataText getDataText() {
         return dataText;
+    }
+
+    public double getAccuracy() {
+        return accuracy;
     }
 
     public static void main(String[] args) {
