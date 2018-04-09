@@ -54,6 +54,24 @@ public class PriceDAO {
         return "ok";
     }
 
+    public static List<String> getAll() {
+        String sql = "select distinct(name) name from price";
+
+        try {
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+
+            List<String> list = new ArrayList<String>();
+            while (rs.next()) {
+                list.add(rs.getString("name"));
+            }
+            return list;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static int getTotal(String name) {
         String sql = "select count(1) count from price where name=?";
 
@@ -140,15 +158,14 @@ public class PriceDAO {
         }
     }
 
-    public static List<Data> getTrain(String name, int number) {
-        String sql = "select * from price where name=? order by date limit ?";
+    public static List<Data> getTrain(String name) {
+        String sql = "select * from price where name=? order by date";
 //        String sql = "select * from fruit_price f where DATE_FORMAT(f.date,'%Y-%m-%d') >=\n" +
 //                " '2017-01-01' order by date";
 
         try {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, name);
-            ps.setInt(2, number);
             ResultSet rs = ps.executeQuery();
             List<Data> list = new ArrayList<Data>();
             while (rs.next()) {
@@ -169,14 +186,13 @@ public class PriceDAO {
         }
     }
 
-    public static List<Data> getTest(String name, int start, int number) {
-        String sql = "select * from price where name=? order by date limit ?,?";
+    public static List<Data> getTest(String name, int number) {
+        String sql = "select * from price where name=? order by date desc limit ?";
 
         try {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, name);
-            ps.setInt(2, start);
-            ps.setInt(3, number);
+            ps.setInt(2, number);
             ResultSet rs = ps.executeQuery();
             List<Data> list = new ArrayList<Data>();
             while (rs.next()) {

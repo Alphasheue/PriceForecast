@@ -3,7 +3,6 @@
 <%@ page import="com.sheue.app.bean.Data" %>
 <%@ page import="com.sheue.app.dao.PriceDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -30,33 +29,6 @@
             height: 30px
         }
 
-        .black_overlay {
-            display: none;
-            position: absolute;
-            top: 0%;
-            left: 0%;
-            width: 100%;
-            height: 100%;
-            background-color: black;
-            z-index: 1001;
-            -moz-opacity: 0.8;
-            opacity: .80;
-            filter: alpha(opacity=88);
-        }
-
-        .white_content {
-            display: none;
-            position: absolute;
-            top: 25%;
-            left: 25%;
-            width: 55%;
-            height: 55%;
-            padding: 20px;
-            border: 4px black;
-            background-color: white;
-            z-index: 1002;
-            overflow: auto;
-        }
     </style>
 
 </head>
@@ -73,26 +45,28 @@
             <button class="button" type="submit">搜索</button>
         </p>
     </form>
+
     <form style="vertical-align:middle" action="/MainServlet" method="post">
         <p style="display:none">
             <input name="src" value="predict">
         </p>
         <p>
-            <%--<a href="javascript:void(0)"--%>
-            <%--onclick="document.getElementById('light').style.display='block';document.getElementById('fade').style.display='block'">--%>
-            <button class="button" type="submit" onclick="alert('温馨提示：模型构建需1~2分钟时间，请耐心等待！')">预测</button>
-            <%--</a>--%>
+            <button class="button" type="submit" onclick="alert('温馨提示：模型构建需2~3分钟时间，请耐心等待！')">预测</button>
         </p>
     </form>
 
-        <div id="light" class="white_content">温馨提示：模型构建需3~5分钟时间，请耐心等待！
-        <button onclick="document.getElementById('light').style.display='none';document.getElementById('fade').style.display='none'">
-            点这里关闭本窗口
-        </button>
-    </div>
-    <div id="fade" class="black_overlay"></div>
-
+            <%
+    String fruitName = String.valueOf(request.getSession().getAttribute("findWord"));
+    if (!"null".equals(fruitName) && !"".equals(fruitName)) {
+    %>
+        <h3><%=fruitName%>价格：</h3>
+            <%
+        } else {
+    %>
     <h3>蔬菜与水果价格：</h3>
+            <%
+        }
+    %>
 
     <div>
         <table class="table" border="1">
@@ -106,17 +80,15 @@
             </thead>
             <tbody>
             <%
-                List<Data> list = new ArrayList<Data>();
                 int currentPage;
                 if (request.getParameter("currentPage") == null) {
                     currentPage = 1;
                 } else {
                     currentPage = Integer.parseInt(String.valueOf(request.getParameter("currentPage")));
                 }
+                List<Data> list;
                 int total;
-                String fruitName = "";
-                if (request.getSession().getAttribute("findWord") != null && !"".equals(request.getSession().getAttribute("findWord"))) {
-                    fruitName = String.valueOf(request.getSession().getAttribute("findWord"));
+                if (!"null".equals(fruitName) && !"".equals(fruitName)) {
                     list = PriceDAO.getPage(fruitName, currentPage);
                     total = PriceDAO.getTotal(fruitName);
                 } else {

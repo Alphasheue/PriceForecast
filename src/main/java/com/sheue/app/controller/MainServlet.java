@@ -34,7 +34,7 @@ public class MainServlet extends HttpServlet {
                     String findWord = request.getParameter("findWord");
                     request.getSession().setAttribute("findWord", findWord);
                 }
-                request.getRequestDispatcher("/index.jsp").forward(request, response);
+                request.getRequestDispatcher("index.jsp").forward(request, response);
                 break;
             case "predict":
                 String image = predict(request);
@@ -42,30 +42,31 @@ public class MainServlet extends HttpServlet {
                     request.getRequestDispatcher("index.jsp").forward(request, response);
                 } else {
                     request.setAttribute("image", image);
-                    request.getRequestDispatcher("/predict.jsp").forward(request, response);
+                    request.getRequestDispatcher("predict.jsp").forward(request, response);
                 }
                 break;
         }
     }
 
     public String predict(HttpServletRequest request) {
-        String findWord;
+        String itemName;
         if (request.getSession().getAttribute("findWord") != null) {
-            findWord = String.valueOf(request.getSession().getAttribute("findWord"));
+            itemName = String.valueOf(request.getSession().getAttribute("findWord"));
             request.getSession().invalidate();
         } else {
             return null;
         }
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        LSTMPredict lstmPredict = LSTMPredict.init(findWord, 1, 0.5, dataset);
-        request.setAttribute("lstmPredictList", lstmPredict.predict(findWord, 10));
+        LSTMPredict lstmPredict = LSTMPredict.init(itemName, 0.5, 0.5, dataset);
+        request.setAttribute("lstmPredictList", lstmPredict.predict(itemName, 10));
         request.setAttribute("lstmAccuracy", lstmPredict.getAccuracy());
-        GRUPredict gruPredict = GRUPredict.init(findWord, 1, 0.33, dataset);
-        request.setAttribute("gruPredictList", gruPredict.predict(findWord, 10));
+        GRUPredict gruPredict = GRUPredict.init(itemName, 1, 0.33, dataset);
+        request.setAttribute("gruPredictList", gruPredict.predict(itemName, 10));
         request.setAttribute("gruAccuracy", gruPredict.getAccuracy());
 
         JFreeChart chart = LineChartUtil.createLineChart("测试结果", "次数", "价格", dataset);
 
+        request.setAttribute("itemName", itemName);
         //保存图片 返回图片文件名
         String filename = null;
         try {

@@ -26,7 +26,7 @@
 
 <body>
 <jsp:include page="Head.jsp"></jsp:include>
-<h1>预测数据图</h1>
+<h1>${itemName}价格预测数据图</h1>
 <div>${image}</div>
 <hr/>
 

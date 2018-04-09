@@ -8,10 +8,7 @@ import com.sheue.ml.utils.LossFunction;
 import org.jblas.DoubleMatrix;
 import org.jfree.data.category.DefaultCategoryDataset;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 // Language Model using LSTM
 public class LSTMPredict {
@@ -25,7 +22,7 @@ public class LSTMPredict {
     }
 
     public static LSTMPredict init(String itemName, double lr, double acc, DefaultCategoryDataset dataset) {
-        DataText dt = new DataText(itemName, 730);
+        DataText dt = new DataText(itemName);
         int hiddenSize = 100;
         LSTMPredict lstm = new LSTMPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
         lstm.dataText = dt;
@@ -40,7 +37,8 @@ public class LSTMPredict {
         Map<String, DoubleMatrix> charVector = dataText.getCharVector();
         Map<String, Integer> charIndex = dataText.getCharIndex();
         List<String> sequenceList = dataText.getSequence();
-        for (int i = 0; i < 400; i++) {
+        int totalTrain = 1000;
+        for (int i = 0; i < totalTrain; i++) {
             double error = 0;
             double num = sequenceList.size();
             double wrong = 0;
@@ -82,13 +80,14 @@ public class LSTMPredict {
                 System.out.println("模型训练完成！");
                 break;
             }
-            if (i == 399) {
+            if (i == totalTrain - 1) {
                 System.out.println("已达到训练次数上限" + (i + 1) + "次！");
             }
         }
 
         System.out.println("开始测试：");
-        List<Data> list = PriceDAO.getTest(itemName, 730, 61);
+        List<Data> list = PriceDAO.getTest(itemName, 61);
+        Collections.reverse(list);
         double error = 0;
         double num = list.size() - 1;
         double wrong = 0;
@@ -139,7 +138,7 @@ public class LSTMPredict {
             lstm.active(t, acts);
             DoubleMatrix predcitYt = lstm.decode(acts.get("h" + t));
             acts.put("py" + t, predcitYt);
-            index++;
+            index = (index + 1) % indexChar.size();
             sequence = indexChar.get(index);
             DoubleMatrix trueYt = charVector.get(sequence);
             acts.put("y" + t, trueYt);
@@ -186,11 +185,9 @@ public class LSTMPredict {
     }
 
     public static void main(String[] args) {
-        String itemName = "西兰花";
-        DataText dt = new DataText(itemName, 730);
-        double lr = 0.8;      //学习速率，越高模型训练速度越快，准度越低
-        double acc = 0.5;   // 错误率，越高越容易训练出来
-        int hiddenSize = 100;
+        String itemName = "苹果";
+        double lr = 1;      //学习速率，越高模型训练速度越快，准度越低
+        double acc = 0.33;   // 错误率，越高越容易训练出来
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         LSTMPredict lstm = LSTMPredict.init(itemName, lr, acc, dataset);
         List<String> list = lstm.predict(itemName, 10);

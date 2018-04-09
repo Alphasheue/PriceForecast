@@ -16,8 +16,8 @@ public class DataText {
     private Map<String, DoubleMatrix> charVector = new HashMap<>();
     private List<String> sequence = new ArrayList<>();
 
-    public DataText(String name, int number) {
-        List<Data> list = PriceDAO.getTrain(name, number);
+    public DataText(String name) {
+        List<Data> list = PriceDAO.getTrain(name);
         for (Data data : list) {
             sequence.add(String.valueOf(data.getPrice()));
             String key = String.valueOf(data.getPrice());
