@@ -5,7 +5,7 @@ import com.sheue.ml.rnn.gru.GRUPredict;
 import com.sheue.ml.rnn.lstm.LSTMPredict;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.servlet.ServletUtilities;
-import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.xy.DefaultXYDataset;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -56,16 +56,16 @@ public class MainServlet extends HttpServlet {
         } else {
             return null;
         }
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        LSTMPredict lstmPredict = LSTMPredict.init(itemName, 0.5, 0.5, dataset);
+        DefaultXYDataset dataset = new DefaultXYDataset();
+        LSTMPredict lstmPredict = new LSTMPredict().init(itemName, 0.5, 0.5, dataset);
         request.setAttribute("lstmPredictList", lstmPredict.predict(itemName, 10));
         request.setAttribute("lstmAccuracy", lstmPredict.getAccuracy());
-        GRUPredict gruPredict = GRUPredict.init(itemName, 1, 0.33, dataset);
+        GRUPredict gruPredict = new GRUPredict().init(itemName, 1, 0.33, dataset);
         request.setAttribute("gruPredictList", gruPredict.predict(itemName, 10));
         request.setAttribute("gruAccuracy", gruPredict.getAccuracy());
 
         JFreeChart chart = LineChartUtil.createLineChart("测试结果", "次数", "价格", dataset);
-
+//        LineChartUtil.draw("./data/" + itemName + ".jpeg", chart, 1280, 720);
         request.setAttribute("itemName", itemName);
         //保存图片 返回图片文件名
         String filename = null;
@@ -81,9 +81,6 @@ public class MainServlet extends HttpServlet {
                 + graphURL
                 + "' width=1280 height=720 border=0 usemap='#"
                 + filename + "'/>";
-//        System.out.println("fileName:" + filename);
-//        System.out.println("graphURL:" + graphURL);
-//        System.out.println("image:" + image);
 
         return image;
     }

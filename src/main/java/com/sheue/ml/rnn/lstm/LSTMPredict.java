@@ -6,7 +6,7 @@ import com.sheue.ml.dataset.DataText;
 import com.sheue.ml.layers.MatIniter;
 import com.sheue.ml.utils.LossFunction;
 import org.jblas.DoubleMatrix;
-import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.xy.DefaultXYDataset;
 
 import java.util.*;
 
@@ -14,14 +14,18 @@ import java.util.*;
 public class LSTMPredict {
     private LSTM lstm;
     private DataText dataText;
-    private DefaultCategoryDataset dataset;
+    private DefaultXYDataset dataset;
     private double accuracy;
+
+    public LSTMPredict() {
+
+    }
 
     public LSTMPredict(int inSize, int outSize, MatIniter initer) {
         this.lstm = new LSTM(inSize, outSize, initer);
     }
 
-    public static LSTMPredict init(String itemName, double lr, double acc, DefaultCategoryDataset dataset) {
+    public LSTMPredict init(String itemName, double lr, double acc, DefaultXYDataset dataset) {
         DataText dt = new DataText(itemName);
         int hiddenSize = 100;
         LSTMPredict lstm = new LSTMPredict(dt.getCharIndex().size(), hiddenSize, new MatIniter(MatIniter.Type.Uniform, 0.1, 0, 0));
@@ -37,7 +41,8 @@ public class LSTMPredict {
         Map<String, DoubleMatrix> charVector = dataText.getCharVector();
         Map<String, Integer> charIndex = dataText.getCharIndex();
         List<String> sequenceList = dataText.getSequence();
-        int totalTrain = 1000;
+        int totalTrain = 200;
+//        double[][] trainSet = new double[2][totalTrain];
         for (int i = 0; i < totalTrain; i++) {
             double error = 0;
             double num = sequenceList.size();
@@ -72,6 +77,8 @@ public class LSTMPredict {
                     wrong++;
                 }
             }
+//            trainSet[0][i] = i + 1;
+//            trainSet[1][i] = error;
 
             lstm.bptt(acts, sequenceList.size() - 2, lr);
 
@@ -84,6 +91,7 @@ public class LSTMPredict {
                 System.out.println("已达到训练次数上限" + (i + 1) + "次！");
             }
         }
+//        dataset.addSeries("LSTM", trainSet);
 
         System.out.println("开始测试：");
         List<Data> list = PriceDAO.getTest(itemName, 61);
@@ -91,6 +99,8 @@ public class LSTMPredict {
         double error = 0;
         double num = list.size() - 1;
         double wrong = 0;
+        double[][] predictSet = new double[2][list.size() - 1];
+        double[][] realSet = new double[2][list.size() - 1];
         Map<String, DoubleMatrix> acts = new HashMap<>();
         for (int t = 0; t < num; t++) {
             String sequence = String.valueOf(list.get(t).getPrice());
@@ -108,13 +118,18 @@ public class LSTMPredict {
 
             double predict = Double.parseDouble(indexChar.get(predcitYt.argmax()));
             double real = Double.parseDouble(indexChar.get(trueYt.argmax()));
-            System.out.println("iter" + (t + 1) + ",predict=" + predict + ",real=" + real);
-            dataset.addValue(predict, "LSTM预测价格", new Integer(t));
-            dataset.addValue(real, "实际价格", new Integer(t));
+//            System.out.println("iter" + (t + 1) + ",predict=" + predict + ",real=" + real);
+            predictSet[0][t] = t + 1;
+            predictSet[1][t] = predict;
+            realSet[0][t] = t + 1;
+            realSet[1][t] = real;
             if (Math.abs(predict - real) > 0.2) {
                 wrong++;
             }
         }
+
+        dataset.addSeries("LSTM预测价格", predictSet);
+        dataset.addSeries("实际价格", realSet);
 
         this.accuracy = (1 - wrong / num) * 100;
         System.out.println("误差=" + error + "，测试用例数=" + num + "，预测错误数=" + wrong + "，准确率"
@@ -172,7 +187,7 @@ public class LSTMPredict {
         return lstm;
     }
 
-    public DefaultCategoryDataset getDataset() {
+    public DefaultXYDataset getDataset() {
         return dataset;
     }
 
@@ -188,8 +203,8 @@ public class LSTMPredict {
         String itemName = "苹果";
         double lr = 1;      //学习速率，越高模型训练速度越快，准度越低
         double acc = 0.33;   // 错误率，越高越容易训练出来
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        LSTMPredict lstm = LSTMPredict.init(itemName, lr, acc, dataset);
+        DefaultXYDataset dataset = new DefaultXYDataset();
+        LSTMPredict lstm = new LSTMPredict().init(itemName, lr, acc, dataset);
         List<String> list = lstm.predict(itemName, 10);
         for (String res : list) {
             System.out.println("res:" + res);
